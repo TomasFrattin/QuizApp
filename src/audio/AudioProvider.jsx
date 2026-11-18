@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ambienceByScene, effects, introEffects, oceanCreatureCalls, systemAudio } from './audioManifest'
+import { ambienceByScene, effects, introEffects, oceanCreatureCalls, systemAudio, terminalAudio } from './audioManifest'
 import { AudioContext } from './audioContext'
 
 const clamp = (value) => Math.max(0, Math.min(1, value))
@@ -17,6 +17,7 @@ function AudioProvider({ children }) {
   const fadeTimersRef = useRef(new Set())
   const sceneRef = useRef(null)
   const lastCreatureRef = useRef(null)
+  const lastKeyClickRef = useRef(null)
   const creatureTimerRef = useRef(null)
   const scheduleCreatureRef = useRef(null)
   const mutedRef = useRef(muted)
@@ -57,6 +58,13 @@ function AudioProvider({ children }) {
     if (source) playFile(source, level)
   }, [playFile])
 
+  const playKeyClick = useCallback(() => {
+    const options = terminalAudio.keyClicks.filter((source) => source !== lastKeyClickRef.current)
+    const source = options[Math.floor(Math.random() * options.length)]
+    lastKeyClickRef.current = source
+    playFile(source, 0.34)
+  }, [playFile])
+
   const playIntroCue = useCallback((name, level) => {
     introCueRef.current?.pause()
     introCueRef.current = null
@@ -80,23 +88,6 @@ function AudioProvider({ children }) {
     fadeTimersRef.current.add(timer)
   }, [])
 
-  const startIntroBoot = useCallback((level = 0.54) => {
-    bootRef.current?.audio.pause()
-    const audio = new Audio(introEffects.pcBooting)
-    audio.volume = mutedRef.current ? 0 : volumeRef.current * level
-    audio.play().catch(() => {})
-    bootRef.current = { audio, level }
-  }, [])
-
-  const fadeOutIntroBoot = useCallback((duration = 1800) => {
-    const boot = bootRef.current
-    if (!boot) return
-    fadeAudio(boot.audio, boot.level, 0, duration, () => {
-      boot.audio.pause()
-      if (bootRef.current?.audio === boot.audio) bootRef.current = null
-    })
-  }, [fadeAudio])
-
   const startSystemHum = useCallback(() => {
     if (!enabledRef.current || systemHumRef.current) return
     const level = 0.15
@@ -106,6 +97,27 @@ function AudioProvider({ children }) {
     audio.play().catch(() => {})
     systemHumRef.current = { audio, level }
     fadeAudio(audio, 0, level, 1800)
+  }, [fadeAudio])
+
+  const startIntroBoot = useCallback((level = 0.54) => {
+    bootRef.current?.audio.pause()
+    const audio = new Audio(introEffects.pcBooting)
+    audio.volume = mutedRef.current ? 0 : volumeRef.current * level
+    audio.addEventListener('ended', () => {
+      if (bootRef.current?.audio === audio) bootRef.current = null
+      startSystemHum()
+    }, { once: true })
+    audio.play().catch(() => {})
+    bootRef.current = { audio, level }
+  }, [startSystemHum])
+
+  const fadeOutIntroBoot = useCallback((duration = 1800) => {
+    const boot = bootRef.current
+    if (!boot) return
+    fadeAudio(boot.audio, boot.level, 0, duration, () => {
+      boot.audio.pause()
+      if (bootRef.current?.audio === boot.audio) bootRef.current = null
+    })
   }, [fadeAudio])
 
   const startTyping = useCallback(() => {
@@ -224,7 +236,7 @@ function AudioProvider({ children }) {
     return () => document.removeEventListener('click', handleClick)
   }, [playEffect])
 
-  return <AudioContext.Provider value={{ enabled, muted, volume, enableAudio, toggleMuted, updateVolume, setScene, playEffect, playIntroEffect, playIntroCue, playRandomOceanCreature, startTyping, stopTyping, stopIntroAudio, startIntroBoot, fadeOutIntroBoot }}>{children}</AudioContext.Provider>
+  return <AudioContext.Provider value={{ enabled, muted, volume, enableAudio, toggleMuted, updateVolume, setScene, playEffect, playIntroEffect, playIntroCue, playRandomOceanCreature, playKeyClick, startTyping, stopTyping, stopIntroAudio, startIntroBoot, fadeOutIntroBoot }}>{children}</AudioContext.Provider>
 }
 
 export default AudioProvider

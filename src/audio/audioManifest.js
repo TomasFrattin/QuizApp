@@ -8,10 +8,22 @@ export const systemAudio = {
   crtHum: '/audio/system/crt-hum.mp3',
 }
 
+export const terminalAudio = {
+  keyClicks: [
+    '/audio/terminal/key-click-01.mp3',
+    '/audio/terminal/key-click-02.mp3',
+    '/audio/terminal/key-click-03.mp3',
+    '/audio/terminal/key-click-04.mp3',
+    '/audio/terminal/key-click-05.mp3',
+    '/audio/terminal/key-click-06.mp3',
+  ],
+}
+
 export const effects = {
   click: '/audio/ui/click.mp3',
   error: '/audio/ui/error-01.mp3',
   success: '/audio/ui/success.mp3',
+  mailAlert: '/audio/terminal/mail-alert.mp3',
   oceanTransition: '/audio/ocean/transition.mp3',
   ballisticsTransition: '/audio/ballistics/transition.mp3',
 }
