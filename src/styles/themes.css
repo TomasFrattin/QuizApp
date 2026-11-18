@@ -1,0 +1,44 @@
+:root, [data-theme='terminal'] { --background:#080b0b; --surface:#101714; --paper:#e2eedc; --ink:#c4d1c0; --muted:#85968a; --accent:#b5ef77; --line:#34483a; --layer-one:rgba(129,210,99,.18); --layer-two:rgba(181,239,119,.09); --layer-three:rgba(181,239,119,.08); --font-mono:'Courier New',Courier,monospace; --font-body:Arial,sans-serif; --font-display:Impact,'Arial Narrow',sans-serif; }
+[data-theme='ocean'] { --background:#05131d; --surface:#0b2432; --paper:#e3f8ff; --ink:#b5dce7; --muted:#78aab8; --accent:#7be6df; --line:#246072; --layer-one:rgba(35,157,193,.28); --layer-two:rgba(89,221,216,.13); --layer-three:rgba(96,182,224,.16); }
+[data-theme='ballistics'] { --background:#211e17; --surface:#353021; --paper:#f3ead0; --ink:#ded1ae; --muted:#b4a47e; --accent:#e7b45c; --line:#766743; --layer-one:rgba(211,159,59,.22); --layer-two:rgba(225,187,105,.15); --layer-three:rgba(230,194,116,.13); }
+
+/* Encendido analógico: una línea brillante se abre hasta revelar la terminal. */
+.intro--crt-turning-on { position: relative; isolation: isolate; }
+.intro--crt-turning-on::before {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  left: 4%;
+  right: 4%;
+  top: 50%;
+  height: 2px;
+  pointer-events: none;
+  background: var(--accent);
+  box-shadow: 0 0 5px var(--paper), 0 0 18px var(--accent), 0 0 42px var(--accent);
+  transform-origin: center;
+  animation: crt-turning-on 2.4s cubic-bezier(.2,.78,.22,1) forwards;
+}
+.intro--crt-turning-on .terminal {
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  transform: scaleY(.03) scaleX(.72);
+  filter: brightness(3) blur(1px);
+  animation: crt-terminal-reveal 5s cubic-bezier(.2,.72,.24,1) 2.5s forwards;
+}
+@keyframes crt-turning-on { 
+  0% { opacity: 1; transform: scaleY(1) scaleX(.08); filter: brightness(3); }
+  25% { opacity: 1; transform: scaleY(3) scaleX(1); filter: brightness(2.4); }
+  68% { opacity: .85; transform: scaleY(80) scaleX(1); filter: brightness(1.35); }
+  100% { opacity: 0; transform: scaleY(280) scaleX(1); filter: brightness(1); }
+}
+@keyframes crt-terminal-reveal {
+  0% { opacity: 0; transform: scaleY(.03) scaleX(.72); filter: brightness(3) blur(1px); }
+  42% { opacity: .68; transform: scaleY(.82) scaleX(.98); filter: brightness(1.55) blur(.35px); }
+  100% { opacity: 1; transform: scaleY(1) scaleX(1); filter: brightness(1) blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro--crt-turning-on::before, .intro--crt-turning-on .terminal { animation: none; }
+  .intro--crt-turning-on::before { opacity: 0; }
+  .intro--crt-turning-on .terminal { opacity: 1; transform: none; filter: none; }
+}

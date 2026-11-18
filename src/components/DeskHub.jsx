@@ -1,0 +1,6 @@
+import { motion } from 'motion/react'
+
+function DeskHub({ caseFiles, progress, onOpenCase }) {
+  return <section className="desk"><motion.header className="desk__header" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7, ease: 'easeOut' }}><span className="eyebrow">ARCHIVO CENTRAL // DIRECTORIO ACTIVO</span><h1>SALA DE EXPEDIENTES</h1><p>Seleccione un caso. Los datos contenidos a continuación requieren criterio, precisión y una buena dosis de curiosidad.</p></motion.header><div className="case-grid">{caseFiles.map((caseFile, index) => { const solved = progress[caseFile.id]?.completedLevels?.length ?? 0; const complete = solved === caseFile.levels.length; return <motion.button className="case-card" type="button" key={caseFile.id} onClick={() => onOpenCase(caseFile)} initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .6, delay: .15 + index * .12, ease: 'easeOut' }} whileHover={{ y: -6, scale: 1.015 }} whileTap={{ scale: .985 }}><span className="case-card__number">ARCHIVO {String(index + 1).padStart(2, '0')}</span><h2>{caseFile.title}</h2><p>{caseFile.summary}</p><span className="case-card__status">{complete ? 'CASO RESUELTO' : `${solved}/${caseFile.levels.length} NIVELES ANALIZADOS`}</span></motion.button> })}</div></section>
+}
+export default DeskHub

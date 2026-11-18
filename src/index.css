@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html { background: #080b0b; }
+body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--font-body, Arial, sans-serif); color: var(--ink, #d9e3d7); background: var(--background, #080b0b); }
+button, input { font: inherit; } button { cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent, #b5ef77); outline-offset: 3px; }

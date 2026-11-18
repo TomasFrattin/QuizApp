@@ -1,0 +1,67 @@
+/* Parámetros globales: ajustar aquí la intensidad de la pantalla CRT. */
+.app-shell {
+  --crt-scanline-opacity: .52;
+  --crt-grain-opacity: .16;
+  --crt-red-offset: .65px;
+  --crt-blue-offset: -.65px;
+  --crt-glow-strength: 11px;
+  --vignette-center: 30%;
+  --vignette-edge: .9;
+}
+
+.app-shell::before, .app-shell::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+
+/* Scanlines + grano: una sola capa para evitar elementos extra en React. */
+.app-shell::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .48) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .06) 0 1px, transparent 1px 5px);
+  background-size: 150px 150px, auto, auto;
+}
+
+/* La curvatura se percibe en los bordes internos sin deformar la interfaz. */
+.app-shell::after {
+  background: none;
+  box-shadow: none;
+}
+
+.app-shell.fx-scanlines::before, .app-shell.fx-grain::before { opacity: var(--crt-scanline-opacity); }
+.app-shell.fx-grain::before { animation: crt-grain .16s steps(2) infinite; }
+.app-shell.fx-curvature::after { box-shadow: inset 0 0 5vw 1vw rgba(0, 0, 0, .5), inset 0 0 14vw 4vw rgba(0, 0, 0, .86); }
+.app-shell.fx-vignette::after { background: radial-gradient(ellipse 92% 84% at center, transparent var(--vignette-center), rgba(0, 0, 0, .24) 56%, rgba(0, 0, 0, var(--vignette-edge)) 112%); }
+.app-shell.fx-curvature::after, .app-shell.fx-vignette::after { opacity: 1; }
+.app-shell.fx-flicker { animation: phosphor-flicker 9s infinite; }
+
+/* El brillo y RGB split se aplican solo a elementos de lectura/UI. */
+.app-shell.fx-glow :is(h1, h2, .eyebrow, .terminal__label, .level-marker, .world__title, .case-card__number, .classified-report span, button) {
+  text-shadow: 0 0 var(--crt-glow-strength) color-mix(in srgb, var(--accent) 58%, transparent);
+}
+.app-shell.fx-aberration :is(h1, h2, .eyebrow, .terminal__label, .level-marker, .world__title, .case-card__number, .classified-report span) {
+  text-shadow: var(--crt-red-offset) 0 rgba(255, 56, 56, .55), var(--crt-blue-offset) 0 rgba(37, 184, 255, .55), 0 0 var(--crt-glow-strength) color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+@keyframes phosphor-flicker {
+  0%, 7%, 18%, 33%, 51%, 72%, 100% { filter: brightness(1); }
+  8% { filter: brightness(.975); }
+  19% { filter: brightness(1.018); }
+  34% { filter: brightness(.982); }
+  73% { filter: brightness(.968); }
+}
+@keyframes crt-grain {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  50% { background-position: 27px -39px, 0 0, 0 0; }
+  100% { background-position: -41px 18px, 0 0, 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell.fx-flicker, .app-shell.fx-grain::before { animation: none; }
+}
