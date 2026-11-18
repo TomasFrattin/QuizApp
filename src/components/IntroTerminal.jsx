@@ -44,6 +44,9 @@ function IntroTerminal({ onComplete }) {
   const [recoveryOpen, setRecoveryOpen] = useState(false)
   const [recoveryToken, setRecoveryToken] = useState('')
   const [recoveryError, setRecoveryError] = useState('')
+  const [qrLoading, setQrLoading] = useState(true)
+  const [recoveryProcessing, setRecoveryProcessing] = useState(false)
+  const [recoveryStage, setRecoveryStage] = useState('VALIDANDO CREDENCIAL')
   const [awaitingAccess, setAwaitingAccess] = useState(false)
   const [characters, setCharacters] = useState(0)
   const completionRef = useRef(onComplete)
@@ -141,6 +144,7 @@ function IntroTerminal({ onComplete }) {
     fadeOutIntroBoot()
     setRecoveryOpen(false)
     setRecoveryError('')
+    setRecoveryProcessing(false)
     setAuthenticated(true)
     setTyping(true)
     startTyping()
@@ -154,14 +158,18 @@ function IntroTerminal({ onComplete }) {
       return
     }
     playEffect('success', 0.72)
-    startAuthenticatedSequence()
+    setRecoveryError('')
+    setRecoveryStage('VALIDANDO CREDENCIAL TEMPORAL')
+    setRecoveryProcessing(true)
+    queue(() => setRecoveryStage('RECUPERANDO FRAGMENTOS DE OPERADOR...'), 650)
+    queue(startAuthenticatedSequence, 3000)
   }
 
   const archiveUrl = `${window.location.origin}/archives`
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=00ff41&bgcolor=031722&data=${encodeURIComponent(archiveUrl)}`
 
   return <section className={`intro ${started ? 'intro--sequence' : 'intro--idle'} ${terminalVisible ? 'intro--terminal-online' : ''} ${crtTurningOn ? 'intro--crt-turning-on' : ''}`}>
-    {import.meta.env.DEV && <IntroSkipHold onSkip={skipIntro} />}
+    <IntroSkipHold onSkip={skipIntro} />
     <div className="terminal">
       {!started && <button className="terminal__button terminal__button--init" type="button" data-silent-click onClick={initializeSequence}>&gt; INICIALIZAR SECUENCIA DE ACCESO</button>}
       {terminalVisible && !authenticated && <motion.form key={failedAttempts} className="terminal-login" onSubmit={handleLoginSubmit} animate={loginError ? { x: [0, -12, 12, -8, 8, 0] } : { x: 0 }} transition={{ duration: .42 }}>
@@ -174,7 +182,7 @@ function IntroTerminal({ onComplete }) {
         <AnimatePresence>
           {loginError && <motion.p className="terminal-login__error" role="alert" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{loginError}</motion.p>}
         </AnimatePresence>
-        {failedAttempts >= 2 && <button className="terminal__recovery-link" type="button" onClick={() => setRecoveryOpen(true)}>[ ¿OLVIDÓ SU TOKEN? INICIAR PROTOCOLO DE RECUPERACIÓN ]</button>}
+        {failedAttempts >= 2 && <button className="terminal__recovery-link" type="button" onClick={() => { setQrLoading(true); setRecoveryOpen(true) }}>[ ¿OLVIDÓ SU TOKEN? INICIAR PROTOCOLO DE RECUPERACIÓN ]</button>}
       </motion.form>}
       {terminalVisible && authenticated && <>
         <span className="terminal__label">CANAL SEGURO // NIVEL DE ACCESO: OPERADOR</span>
@@ -186,16 +194,25 @@ function IntroTerminal({ onComplete }) {
     <AnimatePresence>
       {recoveryOpen && <motion.div className="recovery-overlay" role="dialog" aria-modal="true" aria-labelledby="recovery-title" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
         <motion.form className="recovery-panel" onSubmit={handleRecoverySubmit} initial={{ scale: .96, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .96, y: 14 }}>
-          <button className="recovery-panel__close" type="button" onClick={() => setRecoveryOpen(false)} aria-label="Cerrar recuperación">×</button>
+          {!recoveryProcessing && <button className="recovery-panel__close" type="button" onClick={() => setRecoveryOpen(false)} aria-label="Cerrar recuperación">×</button>}
           <span className="terminal__label">ALERTA // BRECHA TEMPORAL DETECTADA</span>
           <h2 id="recovery-title">SERVIDOR DE RESPALDO</h2>
-          <p>El canal primario fue sellado. Un dispositivo externo puede consultar los registros sobrevivientes.</p>
-          <img className="recovery-panel__qr" src={qrUrl} alt={`Código QR para abrir ${archiveUrl}`} />
-          <p className="recovery-panel__instruction">ESCANEE DESDE UN DISPOSITIVO EXTERNO PARA ACCEDER AL SERVIDOR DE RESPALDO</p>
-          <label htmlFor="recovery-token">TOKEN DE RECUPERACIÓN:</label>
-          <input id="recovery-token" value={recoveryToken} onChange={(event) => setRecoveryToken(event.target.value)} onKeyDown={handleLoginKeyDown} autoComplete="off" autoFocus />
-          {recoveryError && <p className="terminal-login__error" role="alert">{recoveryError}</p>}
-          <button className="terminal__button" type="submit">&gt; VALIDAR TOKEN</button>
+          {recoveryProcessing ? <motion.div className="recovery-panel__validation" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <p>{recoveryStage}</p>
+            <div className="recovery-panel__progress"><motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 3, ease: 'linear' }} /></div>
+            <small>RECONSTRUYENDO ENLACE CON EL SECTOR TEMPORAL...</small>
+          </motion.div> : <>
+            <p>El canal primario fue sellado. Un dispositivo externo puede consultar los registros sobrevivientes.</p>
+            <div className="recovery-panel__qr-frame" aria-busy={qrLoading}>
+              <AnimatePresence>{qrLoading && <motion.div className="recovery-panel__qr-loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><span>COMPILANDO MATRIZ</span><i /></motion.div>}</AnimatePresence>
+              <img className={`recovery-panel__qr ${qrLoading ? 'is-loading' : ''}`} src={qrUrl} alt={`Código QR para abrir ${archiveUrl}`} onLoad={() => setQrLoading(false)} onError={() => setQrLoading(false)} />
+            </div>
+            <p className="recovery-panel__instruction">ESCANEE DESDE UN DISPOSITIVO EXTERNO PARA ACCEDER AL SERVIDOR DE RESPALDO</p>
+            <label htmlFor="recovery-token">TOKEN DE RECUPERACIÓN:</label>
+            <input id="recovery-token" value={recoveryToken} onChange={(event) => setRecoveryToken(event.target.value)} onKeyDown={handleLoginKeyDown} autoComplete="off" autoFocus />
+            {recoveryError && <p className="terminal-login__error" role="alert">{recoveryError}</p>}
+            <button className="terminal__button" type="submit">&gt; VALIDAR TOKEN</button>
+          </>}
         </motion.form>
       </motion.div>}
     </AnimatePresence>
